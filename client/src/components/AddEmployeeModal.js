@@ -5,6 +5,10 @@ import { Label } from "./ui/label";
 import { X } from 'lucide-react';
 import { Select } from "./ui/select";
 
+
+
+const API_URL = 'http://localhost:5038';
+
 const initialEmployeeData = {
   userId: '',
   firstName: '',
@@ -56,7 +60,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee, initi
   const fetchLatestUserId = async () => {
     try {
       console.log('Fetching latest user ID...');
-      const response = await fetch('http://localhost:5038/employees/latest-user-id');
+      const response = await fetch(`${API_URL}/employees/latest-user-id`);
       console.log('Response status:', response.status);
       if (!response.ok) {
         throw new Error(`Failed to fetch latest user ID: ${response.status} ${response.statusText}`);
@@ -107,7 +111,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee, initi
     });
 
     try {
-      const url = isEditing ? `http://localhost:5038/employees/${employeeData.userId}` : 'http://localhost:5038/employees';
+      const url = isEditing ? `${API_URL}/employees/${employeeData.userId}` : `${API_URL}/employees`;
       const method = isEditing ? 'PUT' : 'POST';
       const response = await fetch(url, {
         method: method,

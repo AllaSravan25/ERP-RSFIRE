@@ -89,6 +89,7 @@ export default function EmployeeHome() {
     try {
       const response = await axios.get(`${API_BASE_URL}/projectslist`);
       const { activeProjects } = response.data;
+      console.log(activeProjects);
       setActiveProjects(activeProjects)
       // setCompletedProjects(completedProjects)
     } catch (error) {
@@ -103,14 +104,16 @@ export default function EmployeeHome() {
 
   const handleMarkAsCompleted = async (projectId) => {
     try {
-      const confirm = window.confirm("Are you sure you want to mark this project as completed?") 
-      if (confirm) {
-      // Ensure projectId is sent as an integer
-      // await axios.put(`http://localhost:5038/projectslist/activeProjects/markAsCompleted/${parseInt(projectId, 10)}`);
-      const response = await axios.put(`${API_BASE_URL}/projectslist/activeProjects/markAsCompleted/${parseInt(projectId, 10)}`);
-      console.log(response)
-      fetchActiveProjects();
-      } 
+      console.log(`projectId being sent from client: ${projectId}`);
+      console.log(`userId being sent from client: ${userId}`);
+      
+      const confirmCompletion = window.confirm("Are you sure you want to mark this project as completed?");
+      
+      if (confirmCompletion) {
+        const response = await axios.put(`${API_BASE_URL}/approvals/addApproval/${projectId}/${userId}`);
+        console.log(response);
+        fetchActiveProjects();
+      }
     } catch (error) {
       console.error('Error marking project as completed:', error);
     }
@@ -180,6 +183,8 @@ export default function EmployeeHome() {
           </TableHeader>
           <TableBody>
             {activeProjects.map((project, index) => {
+              // console.log(`project.assignTeam: ${project.assignTeam}`);
+              // console.log(`userId: ${userId}`);
               if (project.assignTeam === userId) {  
                 return (
                   <div style={{ borderTop: '1px solid #e1e1e1' }}>

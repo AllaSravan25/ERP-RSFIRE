@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { FileText, Users, CreditCard, PhoneCall } from "lucide-react";
-// import RevenueBarChart from "../components/RevenueBarChart";
 import "../pages/styles/home.css";
 import AttendanceCalendar from "../components/attendanceMontly";
 import QuickSection from "../components/quickSection";
@@ -11,10 +10,14 @@ const API_BASE_URL = "http://localhost:5038";
 export default function Home() {
   const [employeeCount, setEmployeeCount] = useState(0);
   const [presentCount, setPresentCount] = useState(0);
+  const [absentCount, setAbsentCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [monthlyData, setMonthlyData] = useState([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [projectsData, setProjectsData] = useState({ completed: 0, active: 0, inFunnel: 0 });
+  const [crmData, setCrmData] = useState({ totalLeads: 0, todayLeads: 0, prospects: 0 });
+  const [accountsData, setAccountsData] = useState({ balance: 0, revenue: 0, expenses: 0 });
 
   const fetchRevenueData = useCallback(async () => {
     try {
@@ -33,24 +36,90 @@ export default function Home() {
     }
   }, []);
 
+  const fetchProjectsData = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/projectslist`);
+      const { activeProjects, completedProjects } = response.data;
+      setProjectsData({
+        completed: completedProjects.length,
+        active: activeProjects.length,
+        total: activeProjects.length + completedProjects.length
+      });
+    } catch (error) {
+      console.error("Error fetching projects data:", error);
+      setError("Failed to fetch projects data");
+    }
+  }, []);
+
+  const fetchCRMData = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/contacts`);
+      const { lead, prospect, client } = response.data;
+      setCrmData({
+        totalLeads: lead.length + prospect.length + client.length,
+        todayLeads: lead.filter(l => new Date(l.createdAt).toDateString() === new Date().toDateString()).length,
+        prospects: prospect.length
+      });
+    } catch (error) {
+      console.error("Error fetching CRM data:", error);
+      setError("Failed to fetch CRM data");
+    }
+  }, []);
+
+  const fetchAccountsData = useCallback(async () => {
+    try {
+      // const balanceResponse = await axios.get(`${API_BASE_URL}/account-balance`);
+      const transactionsResponse = await axios.get(`${API_BASE_URL}/transactions`);
+      const transactions = transactionsResponse.data;
+      
+      const revenue = transactions
+        .filter(t => t.type.toLowerCase() === 'received' || t.type.toLowerCase() === 'recieved')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+      
+      const expenses = transactions
+        .filter(t => t.type.toLowerCase() === 'sent')
+        .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+      setAccountsData({
+        balance: revenue - expenses,
+        revenue: revenue,
+        expenses: expenses
+      });
+    } catch (error) {
+      console.error("Error fetching accounts data:", error);
+      setError("Failed to fetch accounts data");
+    }
+  }, []);
+
   const handleTransactionAdded = useCallback(async () => {
-    // Refetch revenue data when a new transaction is added
     await fetchRevenueData();
-  }, [fetchRevenueData]);
+    await fetchAccountsData();
+  }, [fetchRevenueData, fetchAccountsData]);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [employeeResponse, attendanceResponse] = await Promise.all([
+        const [employeeResponse, attendanceResponse, absentResponse] = await Promise.all([
           axios.get(`${API_BASE_URL}/employees/count`),
-          axios.get(`${API_BASE_URL}/attendance/present`, {
+          axios.get(`${API_BASE_URL}/attendance/present`,
+             {
+            params: { date: new Date().toISOString().split("T")[0] },
+          }),
+          axios.get(`${API_BASE_URL}/attendance/absent`,
+          {
             params: { date: new Date().toISOString().split("T")[0] },
           }),
         ]);
         setEmployeeCount(employeeResponse.data.count);
         setPresentCount(attendanceResponse.data.count);
-        await fetchRevenueData();
+        setAbsentCount(absentResponse.data.count);
+        await Promise.all([
+          fetchRevenueData(),
+          fetchProjectsData(),
+          fetchCRMData(),
+          fetchAccountsData()
+        ]);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to fetch data");
@@ -60,10 +129,20 @@ export default function Home() {
     };
 
     fetchData();
-  }, [fetchRevenueData]);
+  }, [fetchRevenueData, fetchProjectsData, fetchCRMData, fetchAccountsData]);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
+  };
+
+  const formatLakhsAndThousands = (value) => {
+    if (value >= 100000) {
+      return `${(value / 100000).toFixed(1)}L`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`;
+    } else {
+      return value.toString();
+    }
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -71,74 +150,66 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white p-6">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-semibold">Hello Sridhar,</h1>
-            <p className="text-gray-600">This is RS FIRE PROTECTION'S dashboard</p>
-          </div>
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-semibold">Hello Sridhar,</h1>
+        <p className="text-gray-600">This is RS FIRE PROTECTION'S dashboard</p>
+      </div>
 
-          <section id="dashboard">
-
-          <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
+      <section id="dashboard">
+        <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
     
-          <div className="flex flex-col md:flex-row md:justify-between">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 w-full md:w-2/3">
-              <DashboardCard
-                title="Projects"
-                icon={<FileText className="w-5 h-5 text-blue-500" />}
-                mainStat={{ label: "Completed", value: 150 }}
-                secondaryStat={{ label: "Active", value: 5 }}
-                inFunnel={{ label: "In funnel", value: 20 }}
-              />
-              <DashboardCard
-                title="Employees"
-                icon={<Users className="w-5 h-5 text-blue-500" />}
-                mainStat={{ label: "Total", value: employeeCount }}
-                secondaryStat={{ label: "Present", value: presentCount }}
-                inFunnel={{ label: "Absent", value: employeeCount - presentCount }}
-              />
-              <DashboardCard
-                title="CRM"
-                icon={<PhoneCall className="w-5 h-5 text-blue-500" />}
-                mainStat={{ label: "Total Leads", value: 150 }}
-                secondaryStat={{ label: "Today", value: 5 }}
-                inFunnel={{ label: "Prospects", value: 20 }}
-              />
-              <DashboardCard
-                title="Accounts"
-                icon={<CreditCard className="w-5 h-5 text-blue-500" />}
-                mainStat={{ label: "Balance", value: 150 }}
-                secondaryStat={{ label: "Revenue", value: 100 }}
-                inFunnel={{ label: "In Expenses", value: 20 }}
-              />
-            </div>
-    
-            <div className="bg-white rounded-lg shadow p-4 mb-6 w-full md:w-1/3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Revenue</h3>
-              </div>
-              <RevenueChart 
-                data={monthlyData} 
-                totalRevenue={totalRevenue} 
-                formatCurrency={formatCurrency} 
-              />
-            </div>
+        <div className="flex flex-col md:flex-row md:justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 w-full md:w-2/3">
+            <DashboardCard
+              title="Projects"
+              icon={<FileText className="w-5 h-5 text-blue-500" />}
+              mainStat={{ label: "Completed", value: projectsData.completed }}
+              secondaryStat={{ label: "Active", value: projectsData.active }}
+              inFunnel={{ label: "Total", value: projectsData.total }}
+            />
+            <DashboardCard
+              title="Employees"
+              icon={<Users className="w-5 h-5 text-blue-500" />}
+              mainStat={{ label: "Total", value: employeeCount }}
+              secondaryStat={{ label: "Present", value: presentCount }}
+              inFunnel={{ label: "Absent", value: absentCount }}
+            />
+            <DashboardCard
+              title="CRM"
+              icon={<PhoneCall className="w-5 h-5 text-blue-500" />}
+              mainStat={{ label: "Total Leads", value: crmData.totalLeads }}
+              secondaryStat={{ label: "Today", value: crmData.todayLeads }}
+              inFunnel={{ label: "Prospects", value: crmData.prospects }}
+            />
+            <DashboardCard
+              title="Accounts"
+              icon={<CreditCard className="w-5 h-5 text-blue-500" />}
+              mainStat={{ label: "Balance", value: formatLakhsAndThousands(accountsData.balance) }}
+              secondaryStat={{ label: "Revenue", value: formatLakhsAndThousands(accountsData.revenue) }}
+              inFunnel={{ label: "Expenses", value: formatLakhsAndThousands(accountsData.expenses) }}
+            />
           </div>
-          </section>
+    
+          <div className="bg-white rounded-lg shadow p-4 mb-6 w-full md:w-1/3">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Revenue</h3>
+            </div>
+            <RevenueChart 
+              data={monthlyData} 
+              totalRevenue={totalRevenue} 
+              formatCurrency={formatCurrency} 
+            />
+          </div>
+        </div>
+      </section>
 
+      <section id="attendance">
+        <AttendanceCalendar />
+      </section>
 
-          <section id="attendance">
-          <AttendanceCalendar />
-          </section>
-
-
-          <section id="quick-actions">
-          <QuickSection onTransactionAdded={handleTransactionAdded} />
-          </section>
-
-
-
-
-
+      <section id="quick-actions">
+        <QuickSection onTransactionAdded={handleTransactionAdded} />
+      </section>
     </div>
   );
 }
@@ -176,8 +247,6 @@ function DashboardCard({ title, icon, mainStat, secondaryStat, inFunnel }) {
               <p className="text-gray-600 col-6">{inFunnel.label}</p>
               <p className="text-1xl  col-6">{inFunnel.value}</p>
             </div>
-            {/* <p className="text-gray-600">{inFunnel.label} <span className="text-black-500 font-semibold">{inFunnel.value}</span></p> */}
-            {/* <p className="text-lg font-semibold">{inFunnel.value}</p> */}
             <button className="text-sm text-blue-500 hover:text-blue-700">
               Add Project
             </button>

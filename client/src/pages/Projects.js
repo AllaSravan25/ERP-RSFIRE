@@ -7,7 +7,7 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/Table"
 import { Avatar, AvatarFallback } from "../components/ui/Avatar"
-import { CheckCircle, Edit, Filter, Plus, Search } from 'lucide-react'
+import { CheckCircle, Filter, Plus, Search } from 'lucide-react'
 import AddProject from '../components/AddProject';
 import EditModal from '../components/EditModal';
 import ViewProjectModal from '../components/ViewProjectModal'; // Add this import
@@ -111,6 +111,9 @@ function ProjectsPage() {
     }
     
     console.log('Mark as completed clicked', markAsCompleted);
+    if (!window.confirm('Are you sure you want to mark this project as completed?')) {
+      return;
+    }
     try {
       const response = await axios.put(`${API_BASE_URL}/projectslist/activeProjects/markAsCompleted/${parseInt(selectedProject, 10)}`);
       
@@ -278,7 +281,7 @@ const handleViewClick = async (projectId) => {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      <section>
+      <section className="mt-0">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">Active Projects</h2>
           <div className="flex space-x-2" >
@@ -322,7 +325,7 @@ const handleViewClick = async (projectId) => {
           </div>
         )}
         <div className="table-container">
-          <div className="overflow-x-auto">
+          <div className="table-wrapper">
             <Table className="w-full">
               <TableHeader className="sticky-header">
                 <TableRow className='flex justify-between'>
@@ -362,9 +365,23 @@ const handleViewClick = async (projectId) => {
                     <TableCell style={{ width: '18%', textAlign: 'left', display: 'flex', alignItems: 'center', fontWeight: '500', textWrap: 'wrap' }}>{project.projectValue}</TableCell>
                     <TableCell style={{ width: '18%', textAlign: 'left', display: 'flex', alignItems: 'center', fontWeight: '500', textWrap: 'wrap' }}>{project.documents && <CheckCircle className="text-green-500" />}</TableCell>
                     <TableCell style={{ width: '18%', textAlign: 'left', display: 'flex', alignItems: 'center', fontWeight: '500', textWrap: 'wrap' }}>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(project.ProjectId)}>
-                        <Edit size={16} />
+                      <div className='flex justify-between items-center w-full'>
+
+                      <Button variant="ghost" size="sm" onClick={() => handleEditClick(project.ProjectId)} style= {{backgroundColor: 'white'}}>
+                        <span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+</svg>
+                        </span>
                       </Button>
+                      <Button style={{display: 'flex', alignItems: 'center', backgroundColor:'white'}} onClick={handleMarkAsCompleted}>
+                        <span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+</svg>
+                        </span>
+          </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                   </div>
@@ -410,6 +427,7 @@ const handleViewClick = async (projectId) => {
                   <TableHead className="font-semibold" style={{width: '18%', textAlign: 'left', padding:'20px', fontWeight: '600', color: 'grey'}}>Team</TableHead>
                   <TableHead className="font-semibold" style={{width: '18%', textAlign: 'left', padding:'20px', fontWeight: '600', color: 'grey'}}>Project value</TableHead>
                   <TableHead className="font-semibold" style={{width: '18%', textAlign: 'left', padding:'20px', fontWeight: '600', color: 'grey'}}>Documents</TableHead>
+                  <TableHead className="font-semibold" style={{width: '18%', textAlign: 'left', padding:'20px', fontWeight: '600', color: 'grey'}}></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -439,8 +457,8 @@ const handleViewClick = async (projectId) => {
                     <TableCell style={{ width: '18%', textAlign: 'left', display: 'flex', alignItems: 'center', fontWeight: '500', textWrap: 'wrap' }}>{project.projectValue}</TableCell>
                     <TableCell style={{ width: '18%', textAlign: 'left', display: 'flex', alignItems: 'center', fontWeight: '500', textWrap: 'wrap' }}>{project.documents && <CheckCircle className="text-green-500" />}</TableCell>
                     <TableCell style={{ width: '18%', textAlign: 'left', display: 'flex', alignItems: 'center', fontWeight: '500', textWrap: 'wrap' }}>
-                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(project.ProjectId)}>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <Button variant="ghost" size="sm" onClick={() => handleViewClick(project.ProjectId)} style={{backgroundColor:'white'}}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" class="size-6">
   <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
 </svg>
@@ -488,12 +506,8 @@ const handleViewClick = async (projectId) => {
 
 const Projects = () => {
   return (
-    <div>
-      <h1>Projects</h1>
-      {/* <TinyLineChart /> */}
-      
+    <div>      
         <ProjectsPage />
-
     </div>
   );
 };

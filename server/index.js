@@ -22,6 +22,99 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+
+
+// ----------------------- Notifications -----------------------
+// ----------------------- Approvals -----------------------
+
+
+app.get('/approvals', async (req, res) => {
+  try {
+    const db = client.db("sample_mflix");
+    const approvals = db.collection("Approvals");
+    const projects = db.collection("projects");
+    const employees = db.collection("employees");
+
+    const approvalDocs = await approvals.find({}).toArray();
+
+    const result = await Promise.all(approvalDocs.map(async (approval) => {
+      const project = await projects.findOne({ ProjectId: approval.projectId });
+      const employee = await employees.findOne({ userId: approval.from });
+      console.log(`employee id was: ${approval.from}`);
+      console.log(project);
+      if(approval.status === "active"){
+      return {
+        ...approval,
+        projectName: project ? project.name : 'Unknown Project',
+        // clientName: project ? project.contact : 'Unknown Client',
+        employeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee',
+        projectId: project ? project.ProjectId : 'Unknown Project'
+      };
+    }
+    else {
+      return null;
+    }
+    }));
+
+    console.log(result);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error retrieving approvals:", error);
+    res.status(500).json({ message: "Error retrieving approvals" });
+  }
+});
+
+app.put('/approvals/addApproval/:projectId/:userId', async (req, res) => {
+  console.log(`req.params:`, req.params);
+  try {
+    const db = client.db("sample_mflix");
+    const approvals = db.collection("Approvals");
+    const { projectId, userId } = req.params;
+    console.log(`projectId: ${projectId}, userId: ${userId}`);
+
+    const result = await approvals.insertOne({
+      type: "Project",
+      projectId: parseInt(projectId, 10),
+      from: parseInt(userId, 10),
+      status: "active"
+    });
+
+    console.log(`result:`, result);
+
+    if (result.insertedId) {
+      res.status(200).json({ message: 'Approval added successfully' });
+    } else {
+      res.status(400).json({ message: 'Failed to add approval' });
+    }
+  } catch (error) {
+    console.error('Error adding approval:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+app.put('/approvals/updateApproval/:projectId', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const db = client.db("sample_mflix");
+    const approvals = db.collection("Approvals");
+    
+    const result = await approvals.updateOne(
+      { projectId: parseInt(projectId, 10) },
+      { $set: { status: "completed" } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Approval not found" });
+    }
+
+    res.status(200).json({ message: 'Approval updated successfully' });
+  } catch (error) {
+    console.error('Error updating approval:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+
 // Make sure this line is near the top of your file, after other imports
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -298,6 +391,31 @@ app.get('/attendance/present', async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
+
+
+app.get('/attendance/absent', async (req, res) => {
+    try {
+        const { date } = req.query;
+        // console.log('Received date for records:', date);
+        
+        // Ensure the date is treated as UTC
+        const startOfDay = new Date(date + 'T00:00:00Z');
+        const endOfDay = new Date(date + 'T23:59:59.999Z');
+
+        const count = await client.db("sample_mflix").collection('attendance').countDocuments({
+            status: "Absent",
+            date: { $gte: startOfDay, $lt: endOfDay }  // Changed $lte to $lt
+        });
+
+        // console.log('Count result:', count);
+        res.json({ count, queryDate: date, startOfDay: startOfDay.toISOString(), endOfDay: endOfDay.toISOString() });
+    } catch (error) {
+        console.error('Error fetching absent employees count:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+
 
 app.get('/attendance/records', async (req, res) => {
     try {
@@ -704,14 +822,13 @@ app.get('/projectslist', async (req, res) => {
   }
 });
 
-// Add route to mark a project as completed
+// Update the route to mark a project as completed
 app.put('/projectslist/activeProjects/markAsCompleted/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const db = client.db("sample_mflix");
     const projects = db.collection("projects");
 
-    // Ensure id is parsed as an integer
     const projectId = parseInt(id, 10);
 
     if (isNaN(projectId)) {
@@ -723,8 +840,8 @@ app.put('/projectslist/activeProjects/markAsCompleted/:id', async (req, res) => 
       { $set: { status: 'completed' } }
     );
 
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: "Project not found or already completed" });
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "Project not found" });
     }
 
     res.status(200).json({ message: "Project marked as completed" });
@@ -1052,6 +1169,21 @@ app.post('/leads', async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+// --------------------------- NOTIFICATIONS ---------------------------//
+
+
+
+
+
+//--------------------------- LOGIN AND REGISTRATION ---------------------------//
+
+
 // Add these new routes before app.listen()
 
 // Route to check if an employee exists and validate credentials
@@ -1200,6 +1332,12 @@ app.get('/employee/attendance/:userId', async (req, res) => {
     res.status(500).json({ message: "Error fetching employee attendance", error: error.message });
   }
 });
+
+
+
+
+
+
 
 // Call this function after connecting to MongoDB
 async function startServer() {
