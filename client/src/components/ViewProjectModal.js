@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from "./ui/button";
 import { ExternalLink } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:5038'; // Add this line
+const API_BASE_URL = "https://react-app-server-beta.vercel.app"; // Add this line
 
 const ViewProjectModal = ({ isOpen, onClose, project, onViewDocument }) => {
   if (!isOpen || !project) return null;

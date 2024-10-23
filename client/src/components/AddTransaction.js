@@ -5,7 +5,7 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 
-const API_BASE_URL = 'http://localhost:5038';
+const API_BASE_URL = "https://react-app-server-beta.vercel.app";
 
 export default function AddTransaction({ onTransactionAdded }) {
   const [newTransaction, setNewTransaction] = useState({

@@ -9,7 +9,7 @@ import AddLead from './AddLead'
 import AddProject from './AddProject'
 import AddTransaction from './AddTransaction'
 
-const API_BASE_URL = 'http://localhost:5038';
+const API_BASE_URL = "https://react-app-server-beta.vercel.app";
 
 // Removed unused CustomTabsTrigger component
 
