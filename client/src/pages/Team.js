@@ -20,7 +20,7 @@ export default function Team() {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch("https://react-app-server-beta.vercel.app")
+      const response = await fetch("https://react-app-server-beta.vercel.app/employees")
       if (!response.ok) {
         throw new Error('Failed to fetch employees')
       }
