@@ -40,7 +40,7 @@ const Accounts = () => {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('http://localhost:5038/transactions');
+      const response = await fetch('https://react-app-server-beta.vercel.app/transactions');
       if (!response.ok) throw new Error('Failed to fetch transactions');
       const data = await response.json();
       setTransactions(data);
@@ -51,7 +51,7 @@ const Accounts = () => {
 
   const fetchMonthlyData = async () => {
     try {
-      const response = await fetch('http://localhost:5038/transactions/monthly');
+      const response = await fetch('https://react-app-server-beta.vercel.app/transactions/monthly');
       if (!response.ok) throw new Error('Failed to fetch monthly data');
       const data = await response.json();
       console.log('Monthly data received:', data);
@@ -63,7 +63,7 @@ const Accounts = () => {
 
   const fetchExpensesBreakdown = async () => {
     try {
-      const response = await fetch('http://localhost:5038/transactions/expenses');
+      const response = await fetch('https://react-app-server-beta.vercel.app/transactions/expenses');
       if (!response.ok) throw new Error('Failed to fetch expenses breakdown');
       const data = await response.json();
       setExpensesBreakdown(data);
