@@ -146,7 +146,7 @@ export default function Home() {
   };
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  // if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-white p-6">
