@@ -90,7 +90,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee, initi
     setDocuments(documents.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
     
@@ -113,14 +113,32 @@ export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee, initi
     try {
       const url = isEditing ? `${API_URL}/employees/${employeeData.userId}` : `${API_URL}/employees`;
       const method = isEditing ? 'PUT' : 'POST';
+      
       const response = await fetch(url, {
         method: method,
         body: formData,
       });
 
+      const contentType = response.headers.get("content-type");
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add/update employee');
+        let errorMessage = `Server error (${response.status})`;
+        
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } else {
+          const textError = await response.text();
+          console.error('Server response:', textError);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Make sure we have JSON response before parsing
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server didn't return JSON");
       }
 
       const result = await response.json();
